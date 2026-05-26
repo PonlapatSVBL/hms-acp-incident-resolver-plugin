@@ -1,0 +1,28 @@
+{
+  "name": "hms-acp",
+  "owner": {
+    "name": "PonlapatSVBL",
+    "email": "janintaponlapat@gmail.com"
+  },
+  "metadata": {
+    "description": "HumanSoft ACP plugins for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "hms-acp-incident-resolver",
+      "source": "./",
+      "description": "Triage and resolve HumanSoft ACP incident cards end-to-end across web-ccs, web-hrs, and api-server. Bundles the acp-incident-resolver skill and the hms-acp-incident-mcp server that feeds it incidents.",
+      "version": "1.0.0",
+      "author": {
+        "name": "PonlapatSVBL"
+      },
+      "keywords": [
+        "humansoft",
+        "acp",
+        "incident",
+        "scrumboard",
+        "mcp"
+      ]
+    }
+  ]
+}

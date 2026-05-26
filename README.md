@@ -79,7 +79,21 @@ export ACP_API_TOKEN="your-jwt-token-here"
 
 ### 3. Install the plugin
 
-Add this plugin via a marketplace or local path, then verify in Claude Code:
+This repo doubles as its own plugin marketplace (`.claude-plugin/marketplace.json`).
+In Claude Code:
+
+```
+/plugin marketplace add PonlapatSVBL/hms-acp-incident-resolver-plugin
+/plugin install hms-acp-incident-resolver@hms-acp
+```
+
+Or for local development, point the marketplace at your clone:
+
+```
+/plugin marketplace add /path/to/hms-acp-incident-resolver-plugin
+```
+
+Then verify:
 
 ```
 /plugin           # confirm the plugin is enabled
