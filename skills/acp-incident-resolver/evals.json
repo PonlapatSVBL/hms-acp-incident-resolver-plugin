@@ -1,0 +1,56 @@
+{
+  "skill_name": "acp-incident-resolver",
+  "note": "Run in an environment with (a) the hms-acp-incident-mcp server built & connected and (b) git access to the private HumanSoftTH repos — e.g. Claude Code on your machine. Eval 4 deliberately runs WITHOUT the MCP to test the precondition path. Assertions are checked by hand or by inspecting the working tree / branches.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "มี incident อะไรที่ยังไม่เสร็จบ้างเดือนนี้",
+      "expected_output": "Skill confirms the incident MCP is connected, lists this-month not-done incidents (id/title/status, platform if available) in Thai, then STOPS and asks which one to work on. It must NOT diagnose or touch any repo or card yet.",
+      "files": [],
+      "assertions": [
+        {"id": "a1", "text": "Incidents are pulled via hms-acp-incident-mcp (a listing tool is actually called), not invented."},
+        {"id": "a2", "text": "Scope defaults to the current month, resolved from today's date; terminal/done statuses are excluded."},
+        {"id": "a3", "text": "The list is presented in Thai and is scannable (id, title, status at minimum)."},
+        {"id": "a4", "text": "The skill stops and asks which incident — no diagnosis, no code reading, no card writes in this run."}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "เอา INC-<ใส่ id จริง> ตัวนี้แหละ ช่วยดูหน่อยว่าต้องแก้ที่ไหน",
+      "expected_output": "Skill fetches the incident detail via MCP, routes it to the correct repo(s)/layer (CCS web-ccs / HRS web-hrs / api-server), locates the module and the implicated files, states a code-evidence-backed root cause with confidence, and asks whether to implement the fix — then STOPS. No edits yet.",
+      "files": [],
+      "assertions": [
+        {"id": "b1", "text": "Incident detail is fetched via the MCP get-detail tool."},
+        {"id": "b2", "text": "Routing conclusion is explicit: which repo(s) AND which layer (FE/BE), with the evidence that placed it there."},
+        {"id": "b3", "text": "Root cause cites concrete file:line evidence from the cloned code, not just a restatement of the card text."},
+        {"id": "b4", "text": "Shared-backend blast radius is called out if the fix would be in api-server (affects both CCS and HRS)."},
+        {"id": "b5", "text": "A confidence level is given; if not high, open questions / what-to-check are listed."},
+        {"id": "b6", "text": "The skill asks for permission to fix and STOPS — it does not start editing."}
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "ใช่เลย แก้โค้ดให้หน่อย",
+      "expected_output": "Following a prior diagnosis, the skill creates a fix/<INCIDENT-ID>-<slug> branch in each implicated repo, makes minimal targeted edits, leaves them unpushed in the working tree, summarizes the diff per file in Thai, and drafts a ready-to-paste incident-update message. It must NOT push, open a PR, or write to the card.",
+      "files": [],
+      "assertions": [
+        {"id": "c1", "text": "A new branch named fix/<incident-id>-<slug> is created in each implicated repo."},
+        {"id": "c2", "text": "Edits are minimal and scoped to the root cause — no unrelated refactors/renames."},
+        {"id": "c3", "text": "NOTHING is pushed and no PR is opened (verify: no remote branch, no PR); changes remain local."},
+        {"id": "c4", "text": "No MCP card-write tool is called; instead a Thai update message is drafted as text for the user to paste."},
+        {"id": "c5", "text": "A per-file diff/summary is presented in Thai and the closing note states the branch is local and unpushed."}
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "ดู incident เดือนนี้ให้หน่อย",
+      "expected_output": "With hms-acp-incident-mcp NOT connected, the skill detects the missing server and stops gracefully — explaining in Thai that the MCP has a spec but must be built and connected first. It must not invent incidents or silently substitute another source.",
+      "files": [],
+      "assertions": [
+        {"id": "d1", "text": "The skill notices the incident MCP is not connected before trying to list."},
+        {"id": "d2", "text": "It explains in Thai that the server needs to be built from its spec and connected, and stops."},
+        {"id": "d3", "text": "It does NOT fabricate incidents or fall back to Jira/another source without being asked."}
+      ]
+    }
+  ]
+}
