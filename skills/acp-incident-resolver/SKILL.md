@@ -37,7 +37,7 @@ Five phases with two mandatory stop-and-wait checkpoints (after listing, after d
 a checkpoint on your own initiative — the user steers which incident and whether code gets touched.
 
 ```
-0. Preconditions & setup   → incident MCP connected? clone 3 repos, pin commits, detect stacks
+0. Preconditions & setup   → incident MCP connected? ask for local project paths, detect stacks
 1. List incidents          → open/to-do/unfinished for the current month (via the MCP)
 2. Ask which one → STOP    ◄── checkpoint
 3. Read & diagnose         → route to repo/layer, find root cause in code, report, ask "fix it?" → STOP  ◄── checkpoint
@@ -56,22 +56,28 @@ via `npx @rabbitdev/hms-acp-incident-mcp`.
 
 Do not fabricate incidents or fall back to guessing — without the MCP there is nothing to triage.
 
-**Clone the three repos** (override if the user gives different URLs or already-checked-out paths). Shallow
-clone into a scratch workspace and pin each commit so the diagnosis is anchored to a known revision:
+**Ask the user for local project paths.** The skill reads code from the user's existing local checkouts —
+no cloning needed. Start by asking for these three:
 
-```bash
-mkdir -p .recon && cd .recon
-git clone --depth 1 https://github.com/HumanSoftTH/web-ccs.git     # CCS frontend
-git clone --depth 1 https://github.com/HumanSoftTH/web-hrs.git     # HRS frontend
-git clone --depth 1 https://github.com/HumanSoftTH/api-server.git  # shared backend
-for r in web-ccs web-hrs api-server; do echo "$r $(git -C $r rev-parse HEAD)"; done
-```
+- `web-ccs` — CCS platform frontend (Angular)
+- `web-hrs` — HRS platform frontend (Angular)
+- `api-server` — shared backend (PHP)
 
-If a clone fails on credentials, stop and tell the user how to authenticate rather than guessing. You don't
-need to clone all three eagerly if it's faster to clone lazily once Phase 3 knows which repo is implicated —
-but having them ready makes diagnosis smoother. Detect each stack lightly (Angular version per frontend from
-`package.json`; backend framework for api-server from `composer.json`) — `references/cross-repo-routing.md`
-covers where things live.
+Ask in Thai, in one message, e.g.:
+> "ช่วยบอก path ของโปรเจคในเครื่องด้วยนะครับ:
+> - web-ccs อยู่ที่ไหน?
+> - web-hrs อยู่ที่ไหน?
+> - api-server อยู่ที่ไหน?
+> มีโปรเจคอื่นนอกเหนือจากนี้ที่เกี่ยวข้องกับ incident ด้วยไหมครับ? (ถ้ามี ช่วยบอก path และอธิบายสั้นๆ ว่าทำอะไร)"
+
+If the user adds extra projects beyond the three defaults, record each one's path **and** its purpose
+(what it does, what stack it uses) so you can route incidents to it correctly in Phase 3.
+
+Wait for the user to answer before proceeding — don't assume paths or invent defaults.
+
+Once you have the paths, verify each directory exists and do a light stack detection (`package.json` for
+frontend frameworks, `composer.json` for PHP backend) so the diagnosis in Phase 3 is grounded in the
+actual code. Read `references/cross-repo-routing.md` for how each project is structured.
 
 ## Phase 1 — List the incidents
 
