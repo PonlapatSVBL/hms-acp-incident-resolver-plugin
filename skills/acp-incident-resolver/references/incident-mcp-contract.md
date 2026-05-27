@@ -1,27 +1,17 @@
 # Incident MCP contract (`hms-acp-incident-mcp`)
 
-This workflow is fed entirely by the `hms-acp-incident-mcp` server, built from
-`https://github.com/PonlapatSVBL/hms-acp-incident-mcp`. The server is started via
-`node $HMS_ACP_INCIDENT_MCP_HOME/dist/index.js` and communicates over stdio.
+This workflow is fed entirely by the `hms-acp-incident-mcp` server, which runs via
+`npx @rabbitdev/hms-acp-incident-mcp` and communicates over stdio.
 
 ## Step 1 — Confirm the server is connected
 
 Before listing anything, confirm `hms-acp-incident-mcp` is among the connected MCP servers.
 
-If it is **not connected**, stop and tell the user in Thai. Direct them to the one-time setup in
-SKILL.md Phase 0 (clone → `npm install && npm run build` → set env vars). Do not invent incidents,
+If it is **not connected**, stop and tell the user in Thai: they need to set `ACP_USERNAME` and
+`ACP_PASSWORD` as environment variables and restart Claude Code. Do not invent incidents,
 and do not substitute another source.
 
-## Step 2 — server_id is required for every call
-
-Every tool takes `server_id` as its first parameter (the ACP domain/instance identifier). If you don't
-already know the value:
-
-1. Call `getListDomains` (no required inputs) — returns the available domain list.
-2. Ask the user to confirm which domain to use.
-3. Pin that `server_id` for the rest of the session.
-
-## Step 3 — Tools you will use
+## Step 2 — Tools you will use
 
 ### Listing incidents — `getBoardLane`
 
@@ -29,7 +19,6 @@ Use this in Phase 1. It returns all cards in one board lane, with filtering.
 
 | Parameter | Required | Notes |
 |---|---|---|
-| `server_id` | yes | domain/instance id |
 | `year_month` | yes | e.g. `"2026-05"` — resolve from today's date for "current month" |
 | `incident_board_type_lv` | yes | lane identifier (Pending / To do / Doing / Ready to test / Complete / Reject) |
 | `keyword` | no | text search |
@@ -49,7 +38,6 @@ Use this in Phase 3 after the user has chosen an incident.
 
 | Parameter | Required | Notes |
 |---|---|---|
-| `server_id` | yes | |
 | `incident_id` | yes | the card's stable id from the listing |
 
 Returns the full card including tasks, comments, members, documents, systems, and all fields useful for
@@ -60,14 +48,14 @@ attachments).
 
 | Tool | What it returns | When to use |
 |---|---|---|
-| `getListDomains` | domain/instance list | Phase 0 — resolve `server_id` |
+| `getListDomains` | domain/instance list | when you need context about available environments |
 | `getListUserDevProduct` | Dev/Product/Ops user list | when you need to interpret a member field |
 | `getListProductFeature` | product feature hierarchy | when filtering or interpreting feature field |
 | `getListIncidentGroup` | incident group/category hierarchy | when interpreting category fields |
 | `getListURL` | available URLs for linking | rarely needed |
 | `getListProductUpdate` | product update list | rarely needed |
 
-## Step 4 — Write tools: never call these
+## Step 3 — Write tools: never call these
 
 The following tools **write to or mutate incident data**. Do not call any of them. When an update is
 warranted, draft the text and hand it to the user to act on themselves.

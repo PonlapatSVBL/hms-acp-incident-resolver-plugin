@@ -50,32 +50,11 @@ a checkpoint on your own initiative — the user steers which incident and wheth
 is connected and look at the tools it exposes — read `references/incident-mcp-contract.md` for the real tool
 names, parameters, and the list of write tools you must never call.
 
-If the server is **not** connected, stop and tell the user in Thai. Then walk them through the one-time
-setup:
-
-```bash
-# 1. Clone the MCP server (once)
-git clone https://github.com/PonlapatSVBL/hms-acp-incident-mcp
-cd hms-acp-incident-mcp
-
-# 2. Build
-npm install
-npm run build
-
-# 3. Set the env var pointing to this directory, e.g. in your shell profile or .env:
-#    HMS_ACP_INCIDENT_MCP_HOME=/path/to/hms-acp-incident-mcp
-#    ACP_USERNAME=your-acp-username
-#    ACP_PASSWORD=your-acp-password
-```
-
-After setup, Claude Code will start the server via `.mcp.json` with:
-`node $HMS_ACP_INCIDENT_MCP_HOME/dist/index.js`
+If the server is **not** connected, stop and tell the user in Thai. They need to set `ACP_USERNAME` and
+`ACP_PASSWORD` as environment variables, then restart Claude Code — the plugin runs the server automatically
+via `npx @rabbitdev/hms-acp-incident-mcp`.
 
 Do not fabricate incidents or fall back to guessing — without the MCP there is nothing to triage.
-
-**All tools need a `server_id`.** This is the ACP domain/instance identifier. If you don't already know it,
-call `getListDomains` (no required inputs) to retrieve the available domain list and ask the user to pick one.
-Pin it for the rest of the session.
 
 **Clone the three repos** (override if the user gives different URLs or already-checked-out paths). Shallow
 clone into a scratch workspace and pin each commit so the diagnosis is anchored to a known revision:
