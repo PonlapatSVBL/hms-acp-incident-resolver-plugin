@@ -29,16 +29,15 @@ hms-acp-incident-resolver-plugin/
 ## Prerequisites
 
 1. **Node.js 18+** with `npx` (to run the MCP server).
-2. **Git access** to the private `HumanSoftTH/web-ccs`, `web-hrs`, and `api-server` repos
-   (the skill clones these during diagnosis).
+2. **Local checkouts** of `web-ccs`, `web-hrs`, and `api-server` — the skill asks for the
+   path to each on first use (no cloning required).
 3. **ACP credentials** (`ACP_USERNAME` and `ACP_PASSWORD`).
 
 ## Setup
 
 ### 1. Set environment variables
 
-`.mcp.json` references these via `${VAR}` expansion — set them in your shell/profile
-before launching Claude Code:
+`.mcp.json` references these via `${VAR}` expansion:
 
 | Variable             | Required | Default                              | Purpose              |
 | -------------------- | -------- | ------------------------------------ | -------------------- |
@@ -48,16 +47,44 @@ before launching Claude Code:
 | `ACP_API_PATH`       | No       | `/api.php`                           | API path             |
 | `ACP_API_TIMEOUT_MS` | No       | `30000`                              | Request timeout (ms) |
 
-PowerShell example:
+Pick whichever method fits your workflow:
+
+**Option A — `.env` file (recommended)** — create a `.env` file in your home directory
+(`~/.env` or `C:\Users\<you>\.env`). Claude Code loads it automatically:
+
+```
+ACP_USERNAME=your-username
+ACP_PASSWORD=your-password
+```
+
+**Option B — PowerShell profile** (persistent across sessions) — add to `$PROFILE`:
 
 ```powershell
 $env:ACP_USERNAME = "your-username"
 $env:ACP_PASSWORD = "your-password"
 ```
 
-bash/zsh example:
+Run `notepad $PROFILE` to open the file (create it if it doesn't exist).
+
+**Option C — Windows system environment variables** (persistent, any shell):
+
+```powershell
+setx ACP_USERNAME "your-username"
+setx ACP_PASSWORD "your-password"
+```
+
+Restart Claude Code after running `setx`.
+
+**Option D — Session only** (lost when the terminal closes):
+
+```powershell
+# PowerShell
+$env:ACP_USERNAME = "your-username"
+$env:ACP_PASSWORD = "your-password"
+```
 
 ```bash
+# bash/zsh
 export ACP_USERNAME="your-username"
 export ACP_PASSWORD="your-password"
 ```
