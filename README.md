@@ -46,7 +46,6 @@ before launching Claude Code:
 | `ACP_PASSWORD`       | **Yes**  | —                                    | ACP login password   |
 | `ACP_API_BASE_URL`   | No       | `https://core-acp.humansoft.co.th`   | API base URL         |
 | `ACP_API_PATH`       | No       | `/api.php`                           | API path             |
-| `ACP_API_WEB_PATH`   | No       | `/api-web.php`                       | Web API path         |
 | `ACP_API_TIMEOUT_MS` | No       | `30000`                              | Request timeout (ms) |
 
 PowerShell example:

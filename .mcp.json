@@ -11,7 +11,6 @@
         "ACP_PASSWORD": "${ACP_PASSWORD}",
         "ACP_API_BASE_URL": "${ACP_API_BASE_URL:-https://core-acp.humansoft.co.th}",
         "ACP_API_PATH": "${ACP_API_PATH:-/api.php}",
-        "ACP_API_WEB_PATH": "${ACP_API_WEB_PATH:-/api-web.php}",
         "ACP_API_TIMEOUT_MS": "${ACP_API_TIMEOUT_MS:-30000}"
       }
     }
