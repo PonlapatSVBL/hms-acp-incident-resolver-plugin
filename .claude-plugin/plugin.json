@@ -19,5 +19,17 @@
     "ccs",
     "hrs"
   ],
-  "mcpServers": "./.mcp.json"
+  "mcpServers": "./../.mcp.json",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/setup.js\""
+          }
+        ]
+      }
+    ]
+  }
 }
