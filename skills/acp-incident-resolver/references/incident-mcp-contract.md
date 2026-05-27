@@ -1,70 +1,114 @@
 # Incident MCP contract (`hms-acp-incident-mcp`)
 
-This workflow is fed entirely by the `hms-acp-incident-mcp` server. As of writing, that server has a **spec
-but is not yet built**, so this file does not hardcode its exact tool names — instead it tells you how to
-discover the real tools at runtime and what operations and fields to expect. When the server is built and
-connected, trust its actual tool list over anything described here.
+This workflow is fed entirely by the `hms-acp-incident-mcp` server, built from
+`https://github.com/PonlapatSVBL/hms-acp-incident-mcp`. The server is started via
+`node $HMS_ACP_INCIDENT_MCP_HOME/dist/index.js` and communicates over stdio.
 
 ## Step 1 — Confirm the server is connected
 
-The incidents do not live in this skill; they live behind the MCP. Before listing anything, confirm
-`hms-acp-incident-mcp` is among the connected MCP servers and look at the incident tools it exposes (their
-names, descriptions, and input schemas). Use the tools exactly as their schemas describe.
+Before listing anything, confirm `hms-acp-incident-mcp` is among the connected MCP servers.
 
-If the server is **not connected**:
-- Do not invent incidents, and do not substitute another source (Jira, a guess, etc.) unless the user
-  explicitly asks you to.
-- Tell the user plainly, in Thai, that `hms-acp-incident-mcp` isn't connected. It has a spec but needs to be
-  built into a running server and connected before incidents can be pulled. The spec was most likely
-  produced as an `mcp-spec.json` (e.g. from the feature-to-mcp-spec workflow); building the server from that
-  spec is the prerequisite. Stop there — there's nothing to triage without it.
+If it is **not connected**, stop and tell the user in Thai. Direct them to the one-time setup in
+SKILL.md Phase 0 (clone → `npm install && npm run build` → set env vars). Do not invent incidents,
+and do not substitute another source.
 
-## Step 2 — Map the operations you need to the tools that exist
+## Step 2 — server_id is required for every call
 
-You need three capabilities. Find the connected tool that provides each (names will vary — match by what the
-tool *does*, per its description and schema, not by a guessed name):
+Every tool takes `server_id` as its first parameter (the ACP domain/instance identifier). If you don't
+already know the value:
 
-| Capability you need | Typical shape | Used in |
+1. Call `getListDomains` (no required inputs) — returns the available domain list.
+2. Ask the user to confirm which domain to use.
+3. Pin that `server_id` for the rest of the session.
+
+## Step 3 — Tools you will use
+
+### Listing incidents — `getBoardLane`
+
+Use this in Phase 1. It returns all cards in one board lane, with filtering.
+
+| Parameter | Required | Notes |
 |---|---|---|
-| **List incidents**, filterable by status and date/month | returns an array of incident summaries | Phase 1 |
-| **Get one incident's full detail** by id | returns the full card | Phase 3 |
-| (avoid) update/transition/comment | writes to the card | never call — see below |
+| `server_id` | yes | domain/instance id |
+| `year_month` | yes | e.g. `"2026-05"` — resolve from today's date for "current month" |
+| `incident_board_type_lv` | yes | lane identifier (Pending / To do / Doing / Ready to test / Complete / Reject) |
+| `keyword` | no | text search |
+| `member` | no | filter by assignee |
+| `feature` | no | filter by product feature |
+| `incident_issue_category_type` | no | issue category filter |
+| `type` | no | card type filter |
+| `due_date` | no | due date filter |
 
-If the server exposes only a single broad tool, adapt: pass the right filter arguments to it for listing,
-then for detail. If it can't filter by status/month server-side, fetch and filter client-side, but prefer
-server-side filters when the schema offers them.
+To list "not done, this month": call `getBoardLane` once per non-terminal lane (To do, Doing, Ready to
+test — plus Pending if warranted) and merge the results. Exclude Complete and Reject. Resolve "current
+month" from today's date (`year_month` = `YYYY-MM` format).
 
-**Do not call any tool that writes to a card** (update status, transition, add comment, assign, close). The
-user handles card updates manually; this skill only ever *drafts* update text for them (see
-`diagnosis-and-fix.md`). Treat write tools as out of bounds even if they're available and look convenient.
+### Getting one card's full detail — `getCard`
 
-## Step 3 — Listing for "not done, this month" (Phase 1)
+Use this in Phase 3 after the user has chosen an incident.
 
-The user wants the incidents that still need work — to-do, in progress, reopened, on-hold, unfinished —
-defaulting to the **current month**. Concretely:
+| Parameter | Required | Notes |
+|---|---|---|
+| `server_id` | yes | |
+| `incident_id` | yes | the card's stable id from the listing |
 
-- Resolve "current month" from today's date (first day 00:00 to now, or the whole calendar month — match
-  whatever the tool's date filter expects).
-- Exclude terminal/done states. The exact status vocabulary comes from the card data; infer the "done" set
-  from what you see (e.g. anything like done/closed/resolved/cancelled) and treat the rest as actionable.
-  If unsure which statuses count as done, ask the user once rather than silently dropping cards.
-- Honor any override the user gave: a specific month, "all open regardless of month", a single id, or a
-  platform filter (CCS-only / HRS-only).
+Returns the full card including tasks, comments, members, documents, systems, and all fields useful for
+diagnosis (title, description, steps to reproduce, expected vs actual, environment, links, stack traces,
+attachments).
+
+### Supporting lookups (use as needed)
+
+| Tool | What it returns | When to use |
+|---|---|---|
+| `getListDomains` | domain/instance list | Phase 0 — resolve `server_id` |
+| `getListUserDevProduct` | Dev/Product/Ops user list | when you need to interpret a member field |
+| `getListProductFeature` | product feature hierarchy | when filtering or interpreting feature field |
+| `getListIncidentGroup` | incident group/category hierarchy | when interpreting category fields |
+| `getListURL` | available URLs for linking | rarely needed |
+| `getListProductUpdate` | product update list | rarely needed |
+
+## Step 4 — Write tools: never call these
+
+The following tools **write to or mutate incident data**. Do not call any of them. When an update is
+warranted, draft the text and hand it to the user to act on themselves.
+
+| Tool | What it does |
+|---|---|
+| `saveCard` | changes lane, status, priority, due dates, pricing |
+| `saveIncident` | edits core card data (title, description, category, etc.) |
+| `addBoardTask` | adds a checklist item |
+| `saveBoardTask` | edits or completes a checklist item |
+| `deleteBoardTask` | removes a checklist item |
+| `addBoardComment` | posts a comment |
+| `saveBoardComment` | edits a comment |
+| `deleteBoardComment` | removes a comment |
+| `saveMember` | replaces the full member list |
+| `archiveIncident` | hides card from board |
+| `unArchiveIncident` | restores archived card |
+| `approveIncident` | approves and moves from Pending |
+| `unApproveIncident` | revokes approval |
+| `changeTypeIncident` | converts Incident ↔ Requirement |
+| `deleteIncident` | deletes the card (hard or soft) |
+| `deleteIncidentDoc` | removes an attachment |
 
 ## Expected incident card fields
 
-The real schema comes from the connected server. These are the fields you'll typically want to read and the
-role each plays — map them onto whatever the card actually calls them:
+From `getCard`, the fields relevant to diagnosis:
 
-- **id / key** — stable identifier; used for branch names and the drafted update.
-- **title / summary** — short statement of the problem.
-- **status** — drives the "not done" filter.
-- **description / steps to reproduce / expected vs actual** — the symptom detail you'll diagnose against.
-- **platform / product / component** — the strongest hint for routing to CCS vs HRS vs backend. If present,
-  trust it as a starting point but still confirm against the code.
-- **attachments / logs / stack traces / error messages** — gold for diagnosis; a stack trace or failing URL
-  often points straight at the file or endpoint.
-- **priority / severity, reporter, assignee, created/updated dates** — for presenting and prioritizing the list.
+- **incident_id** — stable identifier; used for branch names.
+- **incident_topic** — card title / short problem statement.
+- **incident_board_type_lv** — current lane (maps to status).
+- **incident_desc** — full description, steps to reproduce, expected vs actual.
+- **incident_problem** / **incident_correct** — problem statement and correct behavior.
+- **environment_type** — which environment (prod / staging / dev).
+- **incident_issue_category_type** — category; hints at CCS vs HRS vs backend.
+- **incident_feature** — product feature; strongest routing hint alongside category.
+- **incident_system** — related systems (another routing hint).
+- **incident_source_link** / **incident_url** — URLs; a failing endpoint often points straight at the file.
+- **priority** — for prioritizing the list.
+- **members** — assignees.
+- **tasks** — checklist (useful for understanding what's already been attempted).
+- **comments** — thread; may contain stack traces or repro details from the reporter.
+- **documents** — attachments (screenshots, logs, error files).
 
-When a field you'd expect is missing, work with what's there and note the gap in the diagnosis rather than
-assuming a value.
+When a field is missing, work with what's there and note the gap in the diagnosis.
