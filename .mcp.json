@@ -1,9 +1,10 @@
 {
   "mcpServers": {
     "hms-acp-incident-mcp": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "${HMS_ACP_INCIDENT_MCP_HOME}/dist/index.js"
+        "-y",
+        "@rabbitdev/hms-acp-incident-mcp"
       ],
       "env": {
         "ACP_USERNAME": "${ACP_USERNAME}",
