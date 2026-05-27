@@ -14,8 +14,10 @@ It bundles:
 ```
 hms-acp-incident-resolver-plugin/
 ├── .claude-plugin/
-│   └── plugin.json                      # plugin manifest
+│   └── plugin.json                      # plugin manifest (includes SessionStart hook)
 ├── .mcp.json                            # MCP server config (hms-acp-incident-mcp)
+├── scripts/
+│   └── setup.js                         # auto-clones & builds hms-acp-incident-mcp
 └── skills/
     └── acp-incident-resolver/
         ├── SKILL.md                     # the skill
@@ -28,56 +30,45 @@ hms-acp-incident-resolver-plugin/
 
 ## Prerequisites
 
-1. **Node.js** (to run the MCP server).
+1. **Node.js 18+** (to run the MCP server).
 2. **Git access** to the private `HumanSoftTH/web-ccs`, `web-hrs`, and `api-server` repos
    (the skill clones these during diagnosis).
-3. **An ACP API token** (`Authorization: Bearer {token}`).
+3. **ACP credentials** (`ACP_USERNAME` and `ACP_PASSWORD`).
 
 ## Setup
 
-### 1. Build the MCP server
+### 1. Set environment variables
 
-The MCP server lives in a separate repo and must be cloned and built once:
-
-```bash
-git clone https://github.com/PonlapatSVBL/hms-acp-incident-mcp.git
-cd hms-acp-incident-mcp
-npm install
-npm run build      # produces dist/index.js
-```
-
-### 2. Set environment variables
-
-`.mcp.json` references these via `${VAR}` expansion, so set them in your shell/profile
+`.mcp.json` references these via `${VAR}` expansion — set them in your shell/profile
 before launching Claude Code:
 
-| Variable                    | Required | Default                          | Purpose                                   |
-| --------------------------- | -------- | -------------------------------- | ----------------------------------------- |
-| `HMS_ACP_INCIDENT_MCP_HOME` | **Yes**  | —                                | Absolute path to your built MCP repo (the folder containing `dist/index.js`) |
-| `ACP_API_TOKEN`             | **Yes**  | —                                | Bearer token for the ACP API             |
-| `ACP_API_BASE_URL`          | No       | `https://api.humansoft.co.th`    | API base URL                              |
-| `ACP_API_PATH`              | No       | `/api.php`                       | Front-controller path                     |
-| `ACP_USER_ID`               | No       | —                                | Current user ID injection                 |
-| `ACP_API_TIMEOUT_MS`        | No       | `30000`                          | Request timeout (ms)                      |
+| Variable             | Required | Default                                  | Purpose                        |
+| -------------------- | -------- | ---------------------------------------- | ------------------------------ |
+| `ACP_USERNAME`       | **Yes**  | —                                        | ACP login username             |
+| `ACP_PASSWORD`       | **Yes**  | —                                        | ACP login password             |
+| `ACP_API_BASE_URL`   | No       | `https://core-acp.humansoft.co.th`       | API base URL                   |
+| `ACP_API_PATH`       | No       | `/api.php`                               | API path                       |
+| `ACP_API_WEB_PATH`   | No       | `/api-web.php`                           | Web API path                   |
+| `ACP_API_TIMEOUT_MS` | No       | `30000`                                  | Request timeout (ms)           |
 
 PowerShell example:
 
 ```powershell
-$env:HMS_ACP_INCIDENT_MCP_HOME = "C:\path\to\hms-acp-incident-mcp"
-$env:ACP_API_TOKEN = "your-jwt-token-here"
+$env:ACP_USERNAME = "your-username"
+$env:ACP_PASSWORD = "your-password"
 ```
 
 bash/zsh example:
 
 ```bash
-export HMS_ACP_INCIDENT_MCP_HOME="/path/to/hms-acp-incident-mcp"
-export ACP_API_TOKEN="your-jwt-token-here"
+export ACP_USERNAME="your-username"
+export ACP_PASSWORD="your-password"
 ```
 
-> The server config in `.mcp.json` is named `hms-acp-incident-mcp` to match the name the
-> skill expects when it checks that the incident source is connected.
+> The MCP server (`hms-acp-incident-mcp`) is **cloned and built automatically** on first
+> session start via the plugin's `SessionStart` hook — no manual build step needed.
 
-### 3. Install the plugin
+### 2. Install the plugin
 
 This repo doubles as its own plugin marketplace (`.claude-plugin/marketplace.json`).
 In Claude Code:
@@ -115,7 +106,7 @@ incident card** (it drafts update text for you to paste yourself).
 
 ## Notes
 
-- If `hms-acp-incident-mcp` is **not** connected, the skill stops and explains that the server
-  must be built and connected first — it will not fabricate incidents.
+- If `hms-acp-incident-mcp` is **not** connected, the skill stops and guides the user through
+  setup (the `SessionStart` hook normally handles this automatically) — it will not fabricate incidents.
 - `skills/acp-incident-resolver/evals.json` contains evals for the skill. Eval #4 deliberately
   runs with the MCP disconnected to verify the precondition path.
